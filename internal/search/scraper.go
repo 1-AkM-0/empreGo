@@ -8,15 +8,15 @@ import (
 )
 
 type SerperResponse struct {
-	Jobs []Jobs `json:"organic"`
+	Jobs []Job `json:"organic"`
 }
 
-type Jobs struct {
+type Job struct {
 	Title string `json:"title"`
 	Link  string `json:"link"`
 }
 
-func SearchJobs() (*SerperResponse, error) {
+func SearchJobs() ([]Job, error) {
 	url := fmt.Sprint("https://google.serper.dev/search?q=(site%3Abr.linkedin.com%2Fjobs%2Fview+OR+site%3Agupy.io)+%22est%C3%A1gio%22+(%22desenvolvimento%22+OR+%22backend%22+OR+%22ti%22+OR+%22web%22+OR+%22fullstack%22)&gl=br&hl=pt-br&tbs=qdr%3Aw&apiKey=" + os.Getenv("API_KEY"))
 	method := "GET"
 
@@ -37,5 +37,5 @@ func SearchJobs() (*SerperResponse, error) {
 
 	_ = json.NewDecoder(res.Body).Decode(&serperResponse)
 
-	return serperResponse, nil
+	return serperResponse.Jobs, nil
 }
