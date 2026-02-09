@@ -3,8 +3,6 @@ package storage
 import (
 	"database/sql"
 	"fmt"
-
-	"github.com/1-AkM-0/empreGo/internal/search"
 	_ "modernc.org/sqlite"
 )
 
@@ -31,7 +29,7 @@ func (s *SQLiteJobsStore) Close() {
 	s.db.Close()
 }
 
-func (s *SQLiteJobsStore) InsertJob(job search.Job) error {
+func (s *SQLiteJobsStore) InsertJob(job Job) error {
 
 	query := `
 	INSERT INTO jobs (title, link)
@@ -83,4 +81,30 @@ func (s *SQLiteJobsStore) CreateTable() error {
 	}
 	fmt.Println("tabela jobs criada")
 	return nil
+}
+
+func (s *SQLiteJobsStore) AlreadyExists(link string) bool {
+	var lin string
+	query := `
+	SELECT link FROM jobs
+	WHERE link = (?)
+	
+	`
+	rows, err := s.db.Query(query, link)
+	if err != nil {
+		fmt.Println("erro na pesquisa")
+		return true
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+
+		rows.Scan(&lin)
+
+		fmt.Println(lin)
+		return true
+	}
+
+	return false
+
 }
