@@ -30,12 +30,23 @@ func main() {
 	defer db.Close()
 	defer bot.Close()
 
-	results, err := search.SearchJobs()
-	if err != nil {
-		log.Fatal(err)
+	sources := []func() ([]search.Job, error){
+		search.SearchLinkedin,
+		search.SearchGupy,
 	}
 
-	for _, result := range results {
+	allJobs := []search.Job{}
+
+	for _, search := range sources {
+		jobs, err := search()
+		if err != nil {
+			log.Println("erro em alguma das fontes", err)
+			continue
+		}
+		allJobs = append(allJobs, jobs...)
+	}
+
+	for _, result := range allJobs {
 		if !(db.AlreadyExists(result.Link)) {
 
 			jobToInsert := storage.Job{
@@ -48,7 +59,10 @@ func main() {
 				log.Println(err)
 			}
 
-			bot.SendMessage(channelID, "Nova vaga: "+result.Title+"\n"+result.Link)
+			_, err = bot.SendMessage(channelID, "Nova vaga: "+result.Title+"\n"+result.Link)
+			if err != nil {
+				log.Println("erro ao tentar enviar vaga pelo bot", err)
+			}
 		}
 	}
 }
