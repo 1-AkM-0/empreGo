@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/1-AkM-0/empreGo/internal/discord"
 	"github.com/1-AkM-0/empreGo/internal/search"
@@ -30,6 +32,9 @@ func main() {
 	defer db.Close()
 	defer bot.Close()
 
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
 	sources := []func() ([]search.Job, error){
 		search.SearchLinkedin,
 		search.SearchGupy,
@@ -38,13 +43,19 @@ func main() {
 	allJobs := []search.Job{}
 
 	for _, search := range sources {
-		jobs, err := search()
-		if err != nil {
-			log.Println("erro em alguma das fontes", err)
-			continue
-		}
-		allJobs = append(allJobs, jobs...)
+		wg.Go(func() {
+			jobs, err := search()
+			if err != nil {
+				log.Println("erro em alguma das fontes", err)
+				return
+			}
+			mu.Lock()
+			allJobs = append(allJobs, jobs...)
+			mu.Unlock()
+		})
 	}
+
+	wg.Wait()
 
 	for _, result := range allJobs {
 		if !(db.AlreadyExists(result.Link)) {
