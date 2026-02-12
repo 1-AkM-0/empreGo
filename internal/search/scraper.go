@@ -3,11 +3,12 @@ package search
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 type Job struct {
@@ -96,7 +97,6 @@ func SearchLinkedin() ([]Job, error) {
 		}
 		u.RawQuery = ""
 		link = u.String()
-		fmt.Println(link)
 
 		if title != "" && exists {
 			job := Job{

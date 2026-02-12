@@ -84,27 +84,24 @@ func (s *SQLiteJobsStore) CreateTable() error {
 }
 
 func (s *SQLiteJobsStore) AlreadyExists(link string) bool {
-	var lin string
+	var exists int
 	query := `
-	SELECT link FROM jobs
+	SELECT 1 FROM jobs
 	WHERE link = (?)
+	LIMIT 1
 	
 	`
-	rows, err := s.db.Query(query, link)
+	err := s.db.QueryRow(query, link).Scan(&exists)
+
+	if err == sql.ErrNoRows {
+		return false
+	}
+
 	if err != nil {
-		fmt.Println("erro na pesquisa")
-		return true
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-
-		rows.Scan(&lin)
-
-		fmt.Println(lin)
+		fmt.Println("erro na pesquisa", err)
 		return true
 	}
 
-	return false
+	return true
 
 }
