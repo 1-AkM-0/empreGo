@@ -41,6 +41,9 @@ func main() {
 
 	allJobs := []search.Job{}
 
+	log.Println("Inicinado busca")
+	counter := 0
+
 	for _, search := range sources {
 		wg.Go(func() {
 			jobs, err := search()
@@ -73,6 +76,8 @@ func main() {
 			if err != nil {
 				log.Println("erro ao tentar enviar vaga pelo bot", err)
 			}
+			counter++
 		}
 	}
+	log.Printf("%d nova(s) vaga(s) encontrada(s)", counter)
 }
