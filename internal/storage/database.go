@@ -21,6 +21,10 @@ func NewSQLite() (*SQLiteJobsStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao tentar abrir conexao com o database: %w", err)
 	}
+	_, err = db.Exec("PRAGMA journal_mode=WAL;")
+	if err != nil {
+		return nil, fmt.Errorf("erro ao tentar setar o modo wal: %w", err)
+	}
 	return &SQLiteJobsStore{db: db}, nil
 
 }

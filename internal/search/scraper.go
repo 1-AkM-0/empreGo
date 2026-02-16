@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/1-AkM-0/empreGo/internal/storage"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -23,47 +24,45 @@ type GupyJobs struct {
 	} `json:"data"`
 }
 
-func SearchGupy() ([]Job, error) {
+func SearchGupy(jobChannel chan storage.Job) error {
 	rawUrl := "https://employability-portal.gupy.io/api/v1/jobs?jobName=est%C3%A1gio&limit=10&offset=0&workplaceType=remote"
 	method := "GET"
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	req, err := http.NewRequest(method, rawUrl, nil)
 	if err != nil {
-		return nil, fmt.Errorf("erro na tentativa de fazer o wrapper do request: %v", err)
+		return fmt.Errorf("erro na tentativa de fazer o wrapper do request: %v", err)
 	}
 
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao fazer o request: %v", err)
+		return fmt.Errorf("erro ao fazer o request: %v", err)
 	}
 	defer res.Body.Close()
 	gupyResponse := &GupyJobs{}
 	err = json.NewDecoder(res.Body).Decode(&gupyResponse)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao tentar decodar o json: %v", err)
+		return fmt.Errorf("erro ao tentar decodar o json: %v", err)
 	}
-	jobs := []Job{}
 
 	for _, result := range gupyResponse.Data {
-		jobToInsert := Job{
+		jobToInsert := storage.Job{
 			Title: result.Title,
 			Link:  result.Link,
 		}
-		jobs = append(jobs, jobToInsert)
+		jobChannel <- jobToInsert
 	}
-
-	return jobs, nil
+	return nil
 }
 
-func SearchLinkedin() ([]Job, error) {
+func SearchLinkedin(jobChannel chan storage.Job) error {
 	rawUrl := "https://www.linkedin.com/jobs/search?keywords=%22est%C3%A1gio%22+%28%22ti%22+OR+%22desenvolvimento%22+OR+%22web%22+OR+%22backend%22+OR+%22fullstack%22%29&location=Brasil&geoId=106057199&f_TPR=r86400&f_WT=2"
 	method := "GET"
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	req, err := http.NewRequest(method, rawUrl, nil)
 	if err != nil {
-		return nil, fmt.Errorf("erro na tentativa de fazer o wrapper do request: %v", err)
+		return fmt.Errorf("erro na tentativa de fazer o wrapper do request: %v", err)
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, Like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -72,21 +71,19 @@ func SearchLinkedin() ([]Job, error) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao fazer o request: %v", err)
+		return fmt.Errorf("erro ao fazer o request: %v", err)
 	}
 
 	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("linkedin nao retornou 200")
+		return fmt.Errorf("linkedin nao retornou 200")
 	}
 
 	defer res.Body.Close()
 
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao tentar parsear o html: %v", err)
+		return fmt.Errorf("erro ao tentar parsear o html: %v", err)
 	}
-
-	var jobs []Job
 
 	doc.Find("ul.jobs-search__results-list > li").Each(func(i int, s *goquery.Selection) {
 		title := strings.TrimSpace(s.Find("h3.base-search-card__title").Text())
@@ -99,15 +96,15 @@ func SearchLinkedin() ([]Job, error) {
 		link = u.String()
 
 		if title != "" && exists {
-			job := Job{
+			job := storage.Job{
 				Title: title,
 				Link:  link,
 			}
-			jobs = append(jobs, job)
+			jobChannel <- job
 		}
 
 	})
 
-	return jobs, nil
+	return nil
 
 }

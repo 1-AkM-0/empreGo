@@ -31,51 +31,46 @@ func main() {
 	defer db.Close()
 	defer bot.Close()
 
-	var wg sync.WaitGroup
-	var mu sync.Mutex
+	jobChannel := make(chan storage.Job, 10)
 
-	sources := []func() ([]search.Job, error){
+	var wg sync.WaitGroup
+
+	sources := []func(jobChannel chan storage.Job) error{
 		search.SearchLinkedin,
 		search.SearchGupy,
 	}
-
-	allJobs := []search.Job{}
 
 	log.Println("Inicinado busca")
 	counter := 0
 
 	for _, search := range sources {
 		wg.Go(func() {
-			jobs, err := search()
+			err := search(jobChannel)
 			if err != nil {
 				log.Println("erro em alguma das fontes", err)
 				return
 			}
-			mu.Lock()
-			allJobs = append(allJobs, jobs...)
-			mu.Unlock()
 		})
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(jobChannel)
+	}()
 
-	for _, result := range allJobs {
+	for result := range jobChannel {
 		if !(db.AlreadyExists(result.Link)) {
-
-			jobToInsert := storage.Job{
-				Title: result.Title,
-				Link:  result.Link,
-			}
-
-			err := db.InsertJob(jobToInsert)
-			if err != nil {
-				log.Println(err)
-			}
 
 			_, err = bot.SendMessage(channelID, "Nova vaga: "+result.Title+"\n"+result.Link)
 			if err != nil {
 				log.Println("erro ao tentar enviar vaga pelo bot", err)
 			}
+
+			err := db.InsertJob(result)
+			if err != nil {
+				log.Println(err)
+			}
+
 			counter++
 		}
 	}
