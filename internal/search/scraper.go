@@ -46,6 +46,9 @@ func SearchGupy(jobChannel chan storage.Job) error {
 	}
 
 	for _, result := range gupyResponse.Data {
+		if !isTechInternship(result.Title) {
+			continue
+		}
 		jobToInsert := storage.Job{
 			Title: result.Title,
 			Link:  result.Link,
@@ -56,7 +59,7 @@ func SearchGupy(jobChannel chan storage.Job) error {
 }
 
 func SearchLinkedin(jobChannel chan storage.Job) error {
-	rawUrl := "https://www.linkedin.com/jobs/search?keywords=%22est%C3%A1gio%22+%28%22ti%22+OR+%22desenvolvimento%22+OR+%22web%22+OR+%22backend%22+OR+%22fullstack%22%29&location=Brasil&geoId=106057199&f_TPR=r86400&f_WT=2"
+	rawUrl := "https://www.linkedin.com/jobs/search?keywords=%22est%C3%A1gio%22%20OR%20%22estagi%C3%A1rio%22&location=Brasil&geoId=106057199&f_TPR=r86400&f_WT=2&position=1&pageNum=0&currentJobId=4373363527"
 	method := "GET"
 
 	client := &http.Client{Timeout: 30 * time.Second}
@@ -87,6 +90,11 @@ func SearchLinkedin(jobChannel chan storage.Job) error {
 
 	doc.Find("ul.jobs-search__results-list > li").Each(func(i int, s *goquery.Selection) {
 		title := strings.TrimSpace(s.Find("h3.base-search-card__title").Text())
+
+		if !isTechInternship(title) {
+			return
+		}
+
 		link, exists := (s.Find("a.base-card__full-link").Attr("href"))
 		u, err := url.Parse(link)
 		if err != nil {
