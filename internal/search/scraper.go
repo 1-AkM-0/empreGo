@@ -94,12 +94,15 @@ func SearchLinkedin(jobChannel chan storage.Job) error {
 		if !isTechInternship(title) {
 			return
 		}
+		jobID, exists := (s.Find("div.base-card").Attr("data-entity-urn"))
+		link := "https://br.linkedin.com/jobs/view/" + strings.Trim(jobID, "urn:li:jobPosting:")
 
-		link, exists := (s.Find("a.base-card__full-link").Attr("href"))
 		u, err := url.Parse(link)
 		if err != nil {
 			return
 		}
+
+		fmt.Println(link)
 		u.RawQuery = ""
 		link = u.String()
 
