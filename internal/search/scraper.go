@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -59,7 +58,7 @@ func SearchGupy(jobChannel chan storage.Job) error {
 }
 
 func SearchLinkedin(jobChannel chan storage.Job) error {
-	rawUrl := "https://www.linkedin.com/jobs/search?keywords=%22est%C3%A1gio%22%20OR%20%22estagi%C3%A1rio%22&location=Brasil&geoId=106057199&f_TPR=r86400&f_WT=2&position=1&pageNum=0&currentJobId=4373363527"
+	rawUrl := "https://www.linkedin.com/jobs/search?keywords=%22est%C3%A1gio%22%20OR%20%22estagi%C3%A1rio%22%20OR%20%22intern%22%20OR%20%22internship%22&location=Brasil&geoId=106057199&f_TPR=r86400&f_WT=2&position=1&pageNum=0"
 	method := "GET"
 
 	client := &http.Client{Timeout: 30 * time.Second}
@@ -97,14 +96,7 @@ func SearchLinkedin(jobChannel chan storage.Job) error {
 		jobID, exists := (s.Find("div.base-card").Attr("data-entity-urn"))
 		link := "https://br.linkedin.com/jobs/view/" + strings.Trim(jobID, "urn:li:jobPosting:")
 
-		u, err := url.Parse(link)
-		if err != nil {
-			return
-		}
-
 		fmt.Println(link)
-		u.RawQuery = ""
-		link = u.String()
 
 		if title != "" && exists {
 			job := storage.Job{
